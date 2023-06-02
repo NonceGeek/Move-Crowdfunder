@@ -18,3 +18,7 @@ export function PackageLink(packageId: string) {
 export function CallTarget(funName: string) {
     return `${SUI_PACKAGE}::${SUI_MODULE}::${funName}`;
 }
+
+export function AddressLink(address: string) {
+    return `${ExplorerBase}/address/${address}?network=${NETWORK}`;
+}
