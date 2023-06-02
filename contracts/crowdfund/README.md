@@ -1,6 +1,6 @@
 ## Contract on Chain
 
-* **Devnet:** https://suiexplorer.com/object/0x2c297642770b19c384247da8f2493a5e4c99c1b26812d08f388dd65ce19883f1?network=devnet 
+* **Testnet:** https://suiexplorer.com/object/0xc58d0096c328295048aaf3da84247d5814929005a5ab11dbef4286128e0832a6?network=testnet 
 
 ## Main Functions 
 
