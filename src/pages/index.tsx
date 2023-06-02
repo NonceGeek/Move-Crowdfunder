@@ -1,139 +1,174 @@
-import { useWallet } from "@suiet/wallet-kit";
-import { JsonRpcProvider, TransactionBlock } from '@mysten/sui.js';
-import React, { useEffect, useState } from "react";
-import Link from 'next/link';
-import { SUI_PACKAGE, SUI_MODULE } from "../config/constants";
-import { Signer } from "../components/Signer";
-import { NftList } from "../components/NftList";
-import { TransacitonLink } from "../utils/links";
+import { JsonRpcProvider, devnetConnection, mainnetConnection, testnetConnection, TransactionBlock } from "@mysten/sui.js";
+import { SuiMainnetChain, SuiTestnetChain, useWallet } from "@suiet/wallet-kit";
+import { useEffect, useState } from "react";
+import { SHARE_FUND_INFO } from "../config/constants";
+import { CallTarget } from "../utils/links";
 
-export default function Home() {
 
-  const [message, setMessage] = useState('');
-  const [transaction, setTransaction] = useState('');
-  const [nfts, setNfts] = useState<Array<{ id: string, name: string, url: string, description: string }>>([]);
-  const [formInput, updateFormInput] = useState<{
-    name: string;
-    url: string;
-    description: string;
-  }>({
-    name: "",
-    url: "",
-    description: "",
-  });
+const Home = () => {
+  const [displayModal, toggleDisplay] = useState(false);
+  const [openFunds, updateOpenFunds] = useState<Array<any>>([]);
+  // const [transaction, updateTransaction] = useState("");
+  const [donateCoinId, updateDonateCoinId] = useState("");
+  const [donateCoinType, updateDonateCoinType] = useState("");
+  const [donateFundId, updateDonateFundId] = useState("");
+  const [donateValue, updateDonateValue] = useState(100);
 
-  const provider = new JsonRpcProvider();
-  const { account, connected, signAndExecuteTransactionBlock } = useWallet();
 
-  async function mintExampleNFT() {
-    setMessage("");
-    const { name, url, description } = formInput;
-    console.log(`${SUI_PACKAGE}::devnet_nft::mint`);
-    try {
-      const tx = new TransactionBlock();
-      tx.moveCall({
-        target: `${SUI_PACKAGE}::devnet_nft::mint` as any,
-        arguments: [
-          tx.pure(name),
-          tx.pure(description),
-          tx.pure(url),
-        ]
-      })
 
-      const resData = await signAndExecuteTransactionBlock({
-        transactionBlock: tx,
-      });
-
-      updateFormInput({ name: "", url: "", description: "" })
-      console.log('success', resData);
-      setMessage('Mint succeeded');
-      if (resData && resData.digest && resData.digest) {
-        setTransaction(TransacitonLink(resData.digest, SUI_MODULE));
-      }
-    } catch (e) {
-      console.error('failed', e);
-      setMessage(`Mint failed ${e}`);
-      setTransaction('');
-    }
+  const { connected, chain, address, signAndExecuteTransactionBlock } = useWallet();
+  let connection = devnetConnection;
+  if (chain === SuiTestnetChain) {
+    connection = testnetConnection;
+  } else if (chain === SuiMainnetChain) {
+    connection = mainnetConnection;
   }
+  const provider = new JsonRpcProvider(connection);
 
-  async function fetchExampleNFT() {
-    const nftItemType = `${SUI_PACKAGE}::devnet_nft::DevNetNFT`;
-    if (account != null) {
-      const objects = await provider.getOwnedObjects({
-        owner: account?.address, filter: {
-          StructType: nftItemType
-        }, options: {
-          showType: true,
-          showContent: true,
-          showDisplay: true,
-        }
-      })
-      if (objects.data.length > 0) {
-        const nfts = objects.data.map((item: any) => {
-          console.log(item);
-          const { name, url, description } = item.data.content.fields as any;
-          return {
-            id: item.data.objectId,
-            name,
-            url,
-            description
-          }
-        })
-        setNfts(nfts)
+  const fetchCrownFund = async () => {
+    const fundInfo = await provider.getObject({
+      id: SHARE_FUND_INFO,
+      options: {
+        showType: true,
+        showContent: true,
+        showDisplay: false,
       }
-    }
+    });
+    console.log(`fund_info ${fundInfo}`);
+    const fundData = fundInfo.data?.content as any;
+    const openIds = fundData.fields.open.fields.contents as Array<string>;
+    console.log(`open_ids ${openIds}`);
+    const openFunds = await provider.multiGetObjects({
+      ids: openIds, options: {
+        showContent: true
+      }
+    });
+    console.log(openFunds);
+    updateOpenFunds(openFunds);
   }
 
   useEffect(() => {
     (async () => {
       if (connected) {
-        fetchExampleNFT()
+        fetchCrownFund()
       }
     })()
-  }, [connected, transaction])
+  }, [connected])
+
+  const doDonatePrepare = async (fund: any) => {
+    console.log(fund);
+    const coinType: string = fund.data.content.type;
+    coinType.indexOf("");
+    const pattern = /::crowdfund::CrowdFund<([^>]+)>/;
+    const matches = coinType.match(pattern);
+    if (matches && matches?.length > 0) {
+      updateDonateFundId(fund.data.objectId);
+      const match = matches[1];
+      console.log(`fetch donate coins for ${match} `);
+      updateDonateCoinType(match);
+      const donateCoins = await provider.getOwnedObjects({
+        owner: address as string,
+        filter: {
+          StructType: `0x2::coin::Coin<${match}>`
+        },
+        options: {
+          showContent: true,
+        }
+      });
+      console.log(`donate coins ${donateCoins.data.length}`);
+      console.log(donateCoins.data);
+
+      if (donateCoins.data.length > 0) {
+        updateDonateCoinId(donateCoins.data[0].data?.objectId as string);
+        toggleDisplay(true);
+      } else {
+        alert(`sorry you don't have enough coins for ${match}`);
+      }
+    }
+  };
+
+  const doDonate = async () => {
+    console.log("you will create one crownfund ... ");
+    const tx = new TransactionBlock();
+    console.log();
+    const params = {
+      target: CallTarget("crowdfund") as any,
+      typeArguments: [
+        donateCoinType
+      ],
+      arguments: [
+        tx.pure(donateFundId),
+        tx.pure(donateCoinId),
+        tx.pure(donateValue)
+      ],
+    };
+    console.log(params);
+    tx.moveCall(params);
+    const result = await signAndExecuteTransactionBlock({
+      transactionBlock: tx,
+    });
+    console.log(result);
+    alert(result);
+  }
+
 
   return (
-    <div>
-      <Signer />
+    <>
 
-      <div className="card lg:card-side bg-base-100 shadow-xl mt-5">
-        <div className="card-body">
-          <h2 className="card-title">Mint Example NFT:</h2>
+      <div className={displayModal ? "modal modal-middle modal-open" : "modal modal-middle "}>
+        <div className="modal-box">
+          <label onClick={() => { toggleDisplay(false) }} className="btn btn-sm btn-circle absolute right-2 top-2">✕</label>
+          <h3 className="font-bold text-lg">Confirm donate info : </h3>
           <input
-            placeholder="NFT Name"
-            className="mt-4 p-4 input input-bordered input-primary w-full"
-            onChange={(e) =>
-              updateFormInput({ ...formInput, name: e.target.value })
-            }
-          />
-          <input
-            placeholder="NFT Description"
+            placeholder="coin objectId"
             className="mt-8 p-4 input input-bordered input-primary w-full"
-            onChange={(e) =>
-              updateFormInput({ ...formInput, description: e.target.value })
-            }
+            value={donateCoinId}
+            onChange={e => updateDonateCoinId(e.target.value)}
           />
           <input
-            placeholder="NFT IMAGE URL"
+            placeholder="Recipient"
             className="mt-8 p-4 input input-bordered input-primary w-full"
+            value={donateValue}
+            type="number"
             onChange={(e) =>
-              updateFormInput({ ...formInput, url: e.target.value })
+              updateDonateValue(parseInt(e.target.value))
             }
           />
-          <p className="mt-4">{message}{message && <Link href={transaction}>, View transaction</Link>}</p>
-          <div className="card-actions justify-end">
-            <button
-              onClick={mintExampleNFT}
-              className="btn btn-primary btn-xl"
-            >
-              Mint example NFT
-            </button>
+          <div className="modal-action">
+            <label htmlFor="my-modal-6" className="btn" onClick={() => {
+              toggleDisplay(!displayModal);
+              doDonate();
+            }}>Done!</label>
           </div>
         </div>
       </div>
 
-      <NftList nfts={nfts} />
-    </div >
+      {
+        openFunds.map((item: any) => {
+          return (
+            <div className="card lg:card-side bg-base-100 shadow-xl mt-1" key={item.data.objectId}>
+              <div className="card-body">
+                <p className="ml-2">
+                  githublink: {item.data.content.fields.github_repo_link}
+                </p>
+                <p>
+                  ID: {item.data.objectId}
+                </p>
+                <p className="ml-2">
+                  coinType:  {item.data.content.type}
+                </p>
+                <p className="ml-2">
+                  Balance: {item.data.content.fields.balance} / {item.data.content.fields.upper_bound}
+                </p>
+
+                <button className="btn btn-info" onClick={e => doDonatePrepare(item)}>Donate</button>
+              </div>
+            </div>
+          );
+        })
+      }
+    </>
   );
-}
+};
+
+export default Home;

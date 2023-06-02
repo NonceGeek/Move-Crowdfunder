@@ -14,7 +14,7 @@ function WalletSelector({ Component, pageProps }: AppProps) {
     <WalletProvider defaultWallets={AllDefaultWallets}>
       <div className="px-8 rootimage min-h-screen">
         <NavBar />
-        <div className="p-8">
+        <div className="p-3">
           <Component {...pageProps} className="bg-base-300" />
         </div>
       </div>

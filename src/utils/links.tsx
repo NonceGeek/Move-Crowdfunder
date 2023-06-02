@@ -1,5 +1,5 @@
 
-import { NETWORK } from "../config/constants";
+import { NETWORK, SUI_PACKAGE, SUI_MODULE } from "../config/constants";
 
 const ExplorerBase = "https://explorer.sui.io";
 
@@ -13,4 +13,8 @@ export function ObjectLink(objectId: string) {
 
 export function PackageLink(packageId: string) {
     return `${ExplorerBase}/object/${packageId}?network=${NETWORK}`;
+}
+
+export function CallTarget(funName: string) {
+    return `${SUI_PACKAGE}::${SUI_MODULE}::${funName}`;
 }
