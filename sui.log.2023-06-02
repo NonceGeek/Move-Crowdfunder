@@ -1,0 +1,11 @@
+2023-06-02T00:31:45.506362Z  INFO sui::client_commands: Showing 4 results.
+2023-06-02T00:31:45.506923Z  INFO sui::client_commands: 0x4e183efc1fa084d19984c6aa7decc1c1f77624e24715f92159e925b350f3eb40
+2023-06-02T00:31:45.506927Z  INFO sui::client_commands: 0x86ceaf810c3ff22d837185b378fca26832e27e8b12a06a44f048b5c74b404534
+2023-06-02T00:31:45.506929Z  INFO sui::client_commands: 0xce41d8c7b92253686fdfc408650ff9f0a7fe3b295b92a279d8b25e652b69ea20
+2023-06-02T00:31:45.506931Z  INFO sui::client_commands: 0xf218f4052369aa52e175c56a8065e101fb3e6adb5a5b7ac95751c7093d1259b7 <=
+2023-06-02T00:32:34.030871Z  WARN sui_sdk::wallet_context: Client/Server api version mismatch, client api version : 1.2.0, server api version : 1.2.1
+2023-06-02T00:32:34.522241Z  INFO sui::client_commands:                              Object ID                              |  Gas Value 
+2023-06-02T00:32:34.522262Z  INFO sui::client_commands: ----------------------------------------------------------------------------------
+2023-06-02T00:32:42.173814Z  WARN sui_sdk::wallet_context: Client/Server api version mismatch, client api version : 1.2.0, server api version : 1.2.1
+2023-06-02T00:32:42.613518Z  INFO sui::client_commands:                              Object ID                              |  Gas Value 
+2023-06-02T00:32:42.613532Z  INFO sui::client_commands: ----------------------------------------------------------------------------------
