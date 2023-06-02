@@ -7,6 +7,10 @@ module crowdfund::crowdfund {
     use sui::tx_context::{Self, TxContext};
     use sui::url::{Self, Url};
     use sui::event::emit;
+    use sui::clock::Clock;
+    use std::string::utf8;
+
+    use moveflow::stream::{Self, GlobalConfig, StreamInfo};
 
     const MAXU64: u64 = 18446744073709551615u64;
 
@@ -20,6 +24,7 @@ module crowdfund::crowdfund {
         owner: address,
         github_repo_link: Url,
         balance: Balance<T>,
+        flow_balance: u64,
         upper_bound: u64,
     }
 
@@ -78,6 +83,7 @@ module crowdfund::crowdfund {
 
     public entry fun close_crowdfund<T: drop>(fund_info: &mut FundInfo, crown_fund: &mut CrowdFund<T>, ctx: &mut TxContext) {
         assert!(crown_fund.owner == tx_context::sender(ctx), ENotOwner);
+        withdraw_crowdfund<T>(crown_fund, ctx);
         crown_fund.open = false;
         let fund_id: ID = object::id(crown_fund);
         vec_set::remove(&mut fund_info.open, &fund_id);
@@ -98,7 +104,10 @@ module crowdfund::crowdfund {
     public entry fun crowdfund<T: drop>(crown_fund: &mut CrowdFund<T>, donate_money: &mut Coin<T>, amount: u64, ctx: &mut TxContext) {
         assert!(crown_fund.open, EFundClose);
         let fundraised: u64 = balance::value<T>(&crown_fund.balance);
-        let to_donate: u64 = if (fundraised + amount > crown_fund.upper_bound) fundraised + amount - crown_fund.upper_bound else amount;
+        let to_donate: u64 = if (fundraised + crown_fund.flow_balance + amount > crown_fund.upper_bound)
+            fundraised + crown_fund.flow_balance + amount - crown_fund.upper_bound
+        else
+            amount;
         let to_donate_coin: Coin<T> = coin::split(donate_money, to_donate, ctx);
         emit(CrowdFundSponsor {
             id: object::id(crown_fund),
@@ -123,8 +132,72 @@ module crowdfund::crowdfund {
             owner: tx_context::sender(ctx),
             github_repo_link: url::new_unsafe_from_bytes(github_repo_link),
             balance: balance::zero<T>(),
+            flow_balance: 0u64,
             upper_bound,
         }
     }
 
+    public entry fun crowdfund_flow<T: drop>(
+        crown_fund: &mut CrowdFund<T>,
+        donate_money: &mut Coin<T>,
+        amount: u64,
+        start_time: u64,
+        stop_time: u64,
+        global_config: &mut GlobalConfig,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ) {
+        assert!(crown_fund.open, EFundClose);
+        let fundraised: u64 = balance::value<T>(&crown_fund.balance);
+        let to_donate: u64 = if (fundraised + crown_fund.flow_balance + amount > crown_fund.upper_bound)
+            fundraised + crown_fund.flow_balance + amount - crown_fund.upper_bound
+        else
+            amount;
+        let to_donate_coin: Coin<T> = coin::split(donate_money, to_donate, ctx);
+
+        emit(CrowdFundSponsor {
+            id: object::id(crown_fund),
+            sender: tx_context::sender(ctx),
+            amount: to_donate,
+        });
+
+        crown_fund.flow_balance = crown_fund.flow_balance + to_donate;
+
+        stream::create<T>(
+            global_config,
+            to_donate_coin,
+            utf8(object::uid_to_bytes(&crown_fund.id)),
+            utf8(b"crowdfund"),
+            crown_fund.owner,
+            to_donate,
+            start_time,
+            stop_time,
+            1,
+            false,
+            false,
+            clock,
+            ctx,
+        );
+    }
+
+    public entry fun crowdfund_flow_withdraw<T: drop>(
+        crown_fund: &mut CrowdFund<T>,
+        stream: &mut StreamInfo<T>,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ) {
+        assert!(crown_fund.owner == tx_context::sender(ctx), ENotOwner);
+        let withdaw_value = stream::get_withdrawn_amount(stream);
+
+        stream::withdraw(stream, clock, ctx);
+
+        withdaw_value = stream::get_withdrawn_amount(stream) - withdaw_value;
+        crown_fund.flow_balance =  crown_fund.flow_balance - withdaw_value;
+
+        emit(CrowdFundWithdraw {
+            id: object::id(crown_fund),
+            owner: tx_context::sender(ctx),
+            amount: 0,
+        });
+    }
 }
