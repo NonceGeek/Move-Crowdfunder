@@ -1,6 +1,7 @@
 [package]
 name = "moveflow"
 version = "0.0.2"
+published-at = "0x430ba56389aff3ba5ff14cb5acd7234ae471e5c41f2df8704fd324f1ad597e31"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "testnet" }

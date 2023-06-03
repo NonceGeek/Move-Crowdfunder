@@ -1,0 +1,23 @@
+---
+compiled_package_info:
+  package_name: moveflow
+  address_alias_instantiation:
+    moveflow: 430ba56389aff3ba5ff14cb5acd7234ae471e5c41f2df8704fd324f1ad597e31
+    std: "0000000000000000000000000000000000000000000000000000000000000001"
+    sui: "0000000000000000000000000000000000000000000000000000000000000002"
+  source_digest: 4B8BD8195C35A839C53CDC5F4D9FA190925B969811C7DD1E3CB99A1C65596E4A
+  build_flags:
+    dev_mode: false
+    test_mode: false
+    generate_docs: false
+    generate_abis: false
+    install_dir: ~
+    force_recompilation: false
+    lock_file: "./Move.lock"
+    additional_named_addresses: {}
+    architecture: ~
+    fetch_deps_only: false
+    skip_fetch_latest_git_deps: false
+dependencies:
+  - MoveStdlib
+  - Sui
