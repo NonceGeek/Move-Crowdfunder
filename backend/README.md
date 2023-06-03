@@ -17,5 +17,5 @@ curl --location --request POST 'https://faasbyleeduckgo.gigalixirapp.com/api/v1/
     "name": "MoveCrowdfund",
     "func_name": "get_all_crowdfund",
     "params": []
-}'
+}' | jq 
 ```
