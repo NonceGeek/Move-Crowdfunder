@@ -2,9 +2,14 @@
 name = "crowdfund"
 version = "0.0.1"
 
-[dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "testnet" }
-moveflow = { local = "../moveflow" }
+[dependencies.Sui]
+git = "https://github.com/MystenLabs/sui.git"
+subdir = "crates/sui-framework/packages/sui-framework"
+# testnet-1.2.1
+rev = "edfd3b68e74ea1211cab6cbdaffb16e0bb6d6325"
+
+[dependencies.moveflow]
+local = "../moveflow"
 
 [addresses]
 crowdfund = "0x0"
