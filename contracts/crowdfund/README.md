@@ -1,8 +1,10 @@
-## Contract on Chain
+# Contract on Chain
 
-* **Testnet:** https://suiexplorer.com/object/0xc58d0096c328295048aaf3da84247d5814929005a5ab11dbef4286128e0832a6?network=testnet 
+## Deployed address
 
-## Main Functions 
+- <https://suiexplorer.com/object/0xc58d0096c328295048aaf3da84247d5814929005a5ab11dbef4286128e0832a6?network=testnet>
+
+## Main Functions
 
 实现如下函数：
 
@@ -34,3 +36,7 @@ Example Params:
 - `0xd0cd2f5ced348796eb15555fbe41d8d426cab49380b77f9016ea097b6dbaa38d` (Fixed Shared Object)
 - `https://github.com/NonceGeek/Move-Crowdfund`
 
+
+## Deployed New
+
+- <https://scaffold-sui.vercel.app/publish?url=https://raw.githubusercontent.com/v1xingyue/Move-Crowdfund/main/contracts/crowdfund/delopy.json>

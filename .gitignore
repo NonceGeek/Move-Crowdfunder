@@ -1,1 +1,8 @@
+node_modules/*
+package-lock.json
+yarn.lock
+.next
+move/build/*
+move/sui.log.*
+*/build/sui.log.*
 .DS_Store
