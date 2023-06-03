@@ -98,6 +98,8 @@ module crowdfund::crowdfund {
             amount: balance::value(&crown_fund.balance),
         });
         let return_coin: Coin<T> = coin::from_balance(balance::withdraw_all(&mut crown_fund.balance), ctx);
+        let withdaw_value: u64 = coin::value<T>(&return_coin);
+        crown_fund.upper_bound = crown_fund.upper_bound - withdaw_value;
         transfer::public_transfer(return_coin, tx_context::sender(ctx));
     }
 
@@ -193,6 +195,7 @@ module crowdfund::crowdfund {
 
         withdaw_value = stream::get_withdrawn_amount(stream) - withdaw_value;
         crown_fund.flow_balance =  crown_fund.flow_balance - withdaw_value;
+        crown_fund.upper_bound = crown_fund.upper_bound - withdaw_value;
 
         emit(CrowdFundWithdraw {
             id: object::id(crown_fund),
