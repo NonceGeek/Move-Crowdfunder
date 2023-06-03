@@ -1,12 +1,13 @@
 import { JsonRpcProvider, devnetConnection, mainnetConnection, testnetConnection, TransactionBlock } from "@mysten/sui.js";
 import { SuiMainnetChain, SuiTestnetChain, useWallet } from "@suiet/wallet-kit";
 import { useEffect, useState } from "react";
-import { SHARE_FUND_INFO } from "../config/constants";
+import { GLOBAL_FLOW_CONFIG, SHARE_FUND_INFO } from "../config/constants";
 import { AddressLink, CallTarget, ObjectLink } from "../utils/links";
 
 
 const Home = () => {
   const [displayModal, toggleDisplay] = useState(false);
+  const [flowDisplay, toggleFlowDisplay] = useState(false);
   const [openFunds, updateOpenFunds] = useState<Array<any>>([]);
   const [transaction, updateTransaction] = useState<any>({});
   const [donateCoinId, updateDonateCoinId] = useState("");
@@ -14,6 +15,8 @@ const Home = () => {
   const [donateFundId, updateDonateFundId] = useState("");
   const [donateValue, updateDonateValue] = useState(100);
 
+  const [flowStart, updateFlowStart] = useState(Date.parse(new Date() as any) / 1000 - 60);
+  const [flowEnd, updateFlowEnd] = useState(Date.parse(new Date() as any) / 1000 + 600);
 
 
   const { connected, chain, address, signAndExecuteTransactionBlock } = useWallet();
@@ -87,6 +90,39 @@ const Home = () => {
     }
   };
 
+
+  const doMoveFlowPrepare = async (fund: any) => {
+    console.log(fund);
+    const coinType: string = fund.data.content.type;
+    coinType.indexOf("");
+    const pattern = /::crowdfund::CrowdFund<([^>]+)>/;
+    const matches = coinType.match(pattern);
+    if (matches && matches?.length > 0) {
+      updateDonateFundId(fund.data.objectId);
+      const match = matches[1];
+      console.log(`fetch donate coins for ${match} `);
+      updateDonateCoinType(match);
+      const donateCoins = await provider.getOwnedObjects({
+        owner: address as string,
+        filter: {
+          StructType: `0x2::coin::Coin<${match}>`
+        },
+        options: {
+          showContent: true,
+        }
+      });
+      console.log(`donate coins ${donateCoins.data.length}`);
+      console.log(donateCoins.data);
+
+      if (donateCoins.data.length > 0) {
+        updateDonateCoinId(donateCoins.data[0].data?.objectId as string);
+        toggleFlowDisplay(true);
+      } else {
+        alert(`sorry you don't have enough coins for ${match}`);
+      }
+    }
+  };
+
   const doCloseFund = async (fund: any) => {
     console.log("you will close one crownfund ... ");
     const tx = new TransactionBlock();
@@ -118,6 +154,37 @@ const Home = () => {
     }
   }
 
+  const doFlowDonate = async () => {
+    console.log("you will create one crownfund with flow ... ");
+    const tx = new TransactionBlock();
+    const params = {
+      target: CallTarget("crowdfund_flow") as any,
+      typeArguments: [
+        donateCoinType
+      ],
+      arguments: [
+        tx.pure(donateFundId),
+        tx.pure(donateCoinId),
+        tx.pure(donateValue),
+        tx.pure(flowStart),
+        tx.pure(flowEnd),
+        tx.pure(GLOBAL_FLOW_CONFIG),
+        tx.pure("0x6")
+      ],
+    };
+
+    console.log(JSON.stringify(params));
+
+    // debugger;
+    console.log(params);
+    tx.moveCall(params);
+    const result = await signAndExecuteTransactionBlock({
+      transactionBlock: tx,
+    });
+    console.log(result);
+    alert(result);
+    updateTransaction(result);
+  }
 
   const doDonate = async () => {
     console.log("you will create one crownfund ... ");
@@ -178,6 +245,53 @@ const Home = () => {
   return (
     <>
 
+      <div className={flowDisplay ? "modal modal-middle modal-open" : "modal modal-middle "}>
+        <div className="modal-box">
+          <label onClick={() => { toggleFlowDisplay(false) }} className="btn btn-sm btn-circle absolute right-2 top-2">✕</label>
+          <h3 className="font-bold text-lg">Confirm flow info : </h3>
+          <input
+            placeholder="coin objectId"
+            className="mt-8 p-4 input input-bordered input-primary w-full"
+            value={donateCoinId}
+            onChange={e => updateDonateCoinId(e.target.value)}
+          />
+          <input
+            placeholder="Recipient"
+            className="mt-8 p-4 input input-bordered input-primary w-full"
+            value={donateValue}
+            type="number"
+            onChange={(e) =>
+              updateDonateValue(parseInt(e.target.value))
+            }
+          />
+          <input
+            placeholder="flowStartTime"
+            className="mt-8 p-4 input input-bordered input-primary w-full"
+            value={flowStart}
+            type="number"
+            onChange={(e) =>
+              updateFlowStart(parseInt(e.target.value))
+            }
+          />
+          <input
+            placeholder="flowEndTime"
+            className="mt-8 p-4 input input-bordered input-primary w-full"
+            value={flowEnd}
+            type="number"
+            onChange={(e) =>
+              updateFlowEnd(parseInt(e.target.value))
+            }
+          />
+          <div className="modal-action">
+            <label htmlFor="my-modal-6" className="btn" onClick={() => {
+              toggleFlowDisplay(!flowDisplay);
+              doFlowDonate();
+            }}>Add Flow!</label>
+          </div>
+        </div>
+      </div>
+
+
       <div className={displayModal ? "modal modal-middle modal-open" : "modal modal-middle "}>
         <div className="modal-box">
           <label onClick={() => { toggleDisplay(false) }} className="btn btn-sm btn-circle absolute right-2 top-2">✕</label>
@@ -227,13 +341,19 @@ const Home = () => {
                   coinType:  {item.data.content.type}
                 </p>
                 <p className="ml-2">
-                  Balance: {item.data.content.fields.balance} / {item.data.content.fields.upper_bound}
+                  <span>
+                    Balance: {item.data.content.fields.balance} / {item.data.content.fields.upper_bound}
+                  </span>
+                  <b className="ml-2">
+                    Flow : {item.data.content.fields.flow_balance}
+                  </b>
                 </p>
                 <div className="card-actions">
                   <button className="ml-2 btn btn-outline btn-ghost" onClick={e => doWithdraw(item)}>Withdraw</button>
                   {item.data.content.fields.open ? (
                     <div>
                       <button className="ml-2 btn btn-outline btn-ghost" onClick={e => doDonatePrepare(item)}>Donate</button>
+                      <button className="ml-2 btn btn-outline btn-info" onClick={e => doMoveFlowPrepare(item)}>Move Flow</button>
                       <button className="ml-2 btn btn-outline btn-error" onClick={e => doCloseFund(item)}>Close</button>
                     </div>
                   ) : null}
